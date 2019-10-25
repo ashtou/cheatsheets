@@ -7,7 +7,7 @@
 
 ## 2. Git Command List ([commands](#git-commands))
 
-git [add](#git-add) | git [branch](#git-branch) | git [checkout](#git-checkout) | git [clone](#git-clone) | git [commit](#git-commit) |  git [commit --amend](#git-commit---amend) | git [config](#git-config) | git [diff](#git-diff) | git [fetch](#git-fetch) | git [init](#git-init) | git [log](#git-log)  | git [merge](#git-merge) | git [mergetool](#git-mergetool) | git [pull](#git-pull) | git [push](#git-push)| git [rebase](#git-rebase)  | git [reflog](#git-reflog) | git [remote](#git-remote) | git [reset --soft](#git-reset---soft) | git [show](#git-show) | git [status](#git-status) | git [subtree](#git-subtree) | git [upgrade on Windows](#upgrade-on-windows)
+git [add](#git-add) | git [branch](#git-branch) | git [checkout](#git-checkout) | git [clean](#git-clean) | git [clone](#git-clone) | git [commit](#git-commit) |  git [commit --amend](#git-commit---amend) | git [config](#git-config) | git [diff](#git-diff) | git [fetch](#git-fetch) | git [init](#git-init) | git [log](#git-log)  | git [merge](#git-merge) | git [mergetool](#git-mergetool) | git [pull](#git-pull) | git [push](#git-push)| git [rebase](#git-rebase)  | git [reflog](#git-reflog) | git [remote](#git-remote) | git [reset](#git-reset)| git [show](#git-show) | git [status](#git-status) | git [subtree](#git-subtree) | git [upgrade on Windows](#upgrade-on-windows)
 
 ---
 
@@ -329,7 +329,7 @@ git show --stat
     
 4. `:wqa` save and exit
 
-5. `git clean` Remove extra **.orig* created by diff tool (:warning:`-f` to force it?)
+5. `git clean` Remove extra `.orig` created by diff tool (`-n` to show, `-f` to execute)
 
 6. Commit your changes  
 
@@ -349,17 +349,33 @@ git show --stat
 git revert <commit>
 ```
 
-#### git reset --soft
+#### git reset
 
-`--soft` does not touch the index file or the working tree at all (but resets the head to `<commit>`, just like all modes do.
+1. Reset staging area to match most recent commit, but leave the working directory unchanged.
+    * Or remove `<file>` from the staging area, but leave the working directory unchanged. This unstages a file **without** overwriting any changes.
+      ```bash 
+      git reset
+      ```
+      ```bash
+      git reset <file>
+      ```
+2. Different options:
+    * `--soft`: uncommit changes, changes are left staged (in *index* ).
+    * `--mixed` (default): uncommit + unstage changes, changes are left in working tree.
+    * `--hard`: uncommit + unstage + delete changes, nothing left. [[Ref](https://stackoverflow.com/questions/3528245/whats-the-difference-between-git-reset-mixed-soft-and-hard)]
 
-1. Combine several sequential commits into a new one (`HEAD~<n>` is the commit here)
-
+3. `--soft` does not touch the index file or the working tree at all, but resets the head to `<commit>`, just like all modes do.
+   
+    * Combine several sequential commits into a new one (`HEAD~<n>` is the commit here)
+      ```bash
+      git reset --soft HEAD~<n>    # or git reset --soft <commit>
+      git commit -m "<message"> 
+      ```
+#### git clean
+1. Show which files would be removed from working directory. Use the `-f` flag in place of the `-n` flag to execute the clean.
 ```bash
-git reset --soft HEAD~<n>    # or git reset --soft <commit>
-git commit -m "<message"> 
+git clean -n
 ```
-
 ---
 
 ### :warning: Rewriting Git History
@@ -368,8 +384,7 @@ git commit -m "<message">
 
 1. Replace the last commit with the **staged** changes and last commit combined.
     * Amended commits are entirely new commits and the previous commit will no longer be on your current branch (history-rewriting [[Ref]( https://www.atlassian.com/git/tutorials/rewriting-history )])
-    * If you commit once, then try to commit again, you'll get *Your branch is ahead of 'origin/master' by 1 commit.  (use "git push" to publish your local commits)*.  
-
+    
 2.  Or use with **nothing staged** to only edit the last commit’s message.
     
 ```bash
