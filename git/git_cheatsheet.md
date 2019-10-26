@@ -7,7 +7,7 @@
 
 ## 2. Git Command List ([commands](#git-commands))
 
-git [add](#git-add) | git [branch](#git-branch) | git [checkout](#git-checkout) | git [clean](#git-clean) | git [clone](#git-clone) | git [commit](#git-commit) |  git [commit --amend](#git-commit---amend) | git [config](#git-config) | git [diff](#git-diff) | git [fetch](#git-fetch) | git [init](#git-init) | git [log](#git-log)  | git [merge](#git-merge) | git [mergetool](#git-mergetool) | git [pull](#git-pull) | git [push](#git-push)| git [rebase](#git-rebase)  | git [reflog](#git-reflog) | git [remote](#git-remote) | git [reset](#git-reset)| git [show](#git-show) | git [status](#git-status) | git [subtree](#git-subtree) | git [upgrade on Windows](#upgrade-on-windows)
+git [add](#git-add) | git [branch](#git-branch) | git [checkout](#git-checkout) | git [clean](#git-clean) | git [clone](#git-clone) | git [commit](#git-commit) |  git [commit --amend](#git-commit---amend) | git [config](#git-config) | git [diff](#git-diff) | git [fetch](#git-fetch) | git [init](#git-init) | git [log](#git-log)  | git [merge](#git-merge) | git [mergetool](#git-mergetool) | git [pull](#git-pull) | git [push](#git-push) | git [rebase](#git-rebase)  | git [reflog](#git-reflog) | git [remote](#git-remote) | git [reset](#git-reset) | git [show](#git-show) | git [status](#git-status) | git [subtree](#git-subtree) | git [upgrade on Windows](#upgrade-on-windows)
 
 ---
 
@@ -437,6 +437,15 @@ git branch <branch>
 ```bash
 git branch -m <oldname> <newname>
 ```
+5. Remove a branch [[Ref](https://stackoverflow.com/questions/2003505/how-do-i-delete-a-git-branch-locally-and-remotely)]:
+    * Remove a local branch from your machine:
+     ```bash
+     git branch -d <local_branch>              # -D to force delete un-merged branches
+     ```
+    * Remove a remote branch from the server:
+     ```bash
+     git push origin -d <remote_branch>
+     ```
 
 #### git checkout
 
@@ -451,7 +460,14 @@ git checkout <branch>
 git checkout -b <branch>
 ```
 
+3. **Push** a new local branch to a remote branch and **track** it too. With`-u`, Git will set up the tracking information during the push [[Ref](https://stackoverflow.com/questions/2765421/how-do-i-push-a-new-local-branch-to-a-remote-git-repository-and-track-it-too)]
+```bash
+git checkout -b <branch>
+git push -u origin <branch>     # -u: --set-upstream
+```
+
 #### git merge
+
 1. Merge `<branch>` into the current branch.
 ```bash
 git merge <branch>
@@ -475,8 +491,13 @@ git remote add <name> <url>  # if used for initial push, 'origin' is used as <na
 ```bash
 git remote -v
 ```
+3. Remove the remote and its references from your local repository, **not** the server.
+```bash
+git remote rm <name>
+```
 
 #### git fetch
+
 1. Fetch a specific `<branch>`, from the repo.
     * Download the remote content, but leave your local repo's work intact
 ```bash 
@@ -486,6 +507,10 @@ git fetch <remote> <branch>
 2. Leave off `<branch>` to fetch all remote refs.
 ```bash 
 git fetch <remote>
+```
+3. Fetch all remotes
+```bash 
+git fetch --all
 ```
 
 #### git pull
@@ -510,10 +535,10 @@ git push <remote> <branch>
 ```
 
 #### git subtree
-1. It lets you nest one repository inside another as a sub-directory.
+1. Add a subtree, which lets you nest one repository inside another as a sub-directory.
     * Add the subtree as a `remote`
      ```bash
-     git remote add <mysubtree> <subproject_repo_url>
+     git remote add <mysubtree> <upstream_repo_url>
      ```
     * Add `<mysubtree>` at a specified `prefix` folder. :warning: if you add `--squash` you will squash the whole history of the subproject  repository into a single one.
      ```bash
@@ -524,7 +549,21 @@ git push <remote> <branch>
      git fetch <mysubtree> master
      git subtree pull --prefix=<folder_for_mysubtree> <mysubtree> master --squash 
      ```
-2. Subtree diff:
+    
+2. Push a subtree to `<branch>` (note that the remote here is  `origin` not the upstream. `<branch>` is the current branch we are pushing from.
+```bash
+git subtree push --prefix=<folder_for_mysubtree> origin <branch> 
+```
+
+3. **Contribute back upstream**: We can freely commit  fixes to the subproject in our local working directory, but to contribute back upstream, we need to **Fork** it and then add the fork URL as another remote. It might be a good idea to leave the `master` untouched and use another branch:
+```bash
+git remote add <upstream_fork> <fork_repo_url>
+git subtree push --prefix=<folder_for_mysubtree> <upstream_fork> <fix_branch> 
+```
+
+
+4. Subtree `diff`: 
+
 ```bash
 git fetch <mysubtree> master
 git diff remotes/<mysubtree>/master master:<folder_for_mysubtree>
