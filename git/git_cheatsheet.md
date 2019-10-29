@@ -138,20 +138,27 @@ git mergetool
 
 #### Diffs 
 
-`git diff` differences between the **working directory** and the **index**.
+1. Working directory vs. staged vs. HEAD
 
-`git diff --staged` or `--cached` differences between the **index** and the **HEAD** (can also add option `--name-only`)
-
-`git diff HEAD` differences between the **working directory** and **HEAD**. All changes since the last commit. 
-
+* `git diff` differences between the **working directory** and the **index**.
+* `git diff --staged` or `--cached` differences between the **index** and the **HEAD** (can also add option `--name-only`)
+* `git diff HEAD` differences between the **working directory** and **HEAD**. All changes since the last commit.
+[[Ref]( https://stackoverflow.com/questions/1587846/how-do-i-show-the-changes-which-have-been-staged?noredirect=1&lq=1)]
 ![Diffs](images/diffs.png) 
 
-[[Ref]( https://stackoverflow.com/questions/1587846/how-do-i-show-the-changes-which-have-been-staged?noredirect=1&lq=1)]
+2. Fetched vs. staged
+
+```bash
+git fetch origin master
+git diff --staged FETCH_HEAD
+```
 
 #### --amend vs. reset --soft:
 
 - `git commit --amend` to add/rm files from the very last commit or to change its message.
 - `git reset --soft HEAD~<n> ` `git commit -m "<message>"` to combine several sequential commits into a new one.
+
+
 
 ---
 
@@ -273,7 +280,7 @@ git log # --oneline
 #### git diff
 1. Show unstaged changes between your index and working directory.
 ```bash
-git diff
+git diff  # -w to ignore any whitespace changes.
 ```
 
 #### git show
@@ -359,10 +366,14 @@ git revert <commit>
       ```bash
       git reset <file>
       ```
+      ```bash
+      git reset HEAD -- .  # unstage files in the current directory
+      ```
 2. Different options:
     * `--soft`: uncommit changes, changes are left staged (in *index* ).
     * `--mixed` (default): uncommit + unstage changes, changes are left in working tree.
     * `--hard`: uncommit + unstage + delete changes, nothing left. [[Ref](https://stackoverflow.com/questions/3528245/whats-the-difference-between-git-reset-mixed-soft-and-hard)]
+
 
 3. `--soft` does not touch the index file or the working tree at all, but resets the head to `<commit>`, just like all modes do.
    
