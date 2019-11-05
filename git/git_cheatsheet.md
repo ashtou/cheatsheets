@@ -1,5 +1,5 @@
 ## 1. Git Terminology List ([terminology](#git-terminology))
-[Clone](#clone) | [Fork](#fork) | [.gitignore](#gitignore) | [ HEAD](#HEAD) 
+[Clone](#clone) | [Fork](#fork) | [.gitignore](#gitignore) | [ HEAD](#HEAD)
 
 ---
 
@@ -33,6 +33,30 @@ git pull                                          # git pull -s recursive -X our
 git push <remote> <branch>                        # e.g. git push origin master
 ```
 
+#### Push your `feature` changes to `master` (collaborative projects)
+
+1. Suppose you are ***behind*** `master` (and your new changes are in `feature` branch):
+The best thing to do is to `rebase` your work into the up-to-date local `master`, such that your changes appear on top of the latest version of the master.
+```bash
+# Suppose you have committed your feature branch changes, so now you switch to your local master
+git checkout master
+git pull          # just make sure you are at the SAME commit as the origin/master
+# Now go back to the feature and resolve conflicts locally
+git checkout feature
+git fetch origin  # just to keep these steps independent of the above
+git log HEAD...origin/master --oneline # ... to show (a-b)U(b-a) commits
+git rebase master
+# if the auto-merging fails:
+  git mergetool                          # $ git config merge.tool vimdiff (make sure it's configured): there should be local, HEAD and remote in this case.
+  git clean -f
+  git status                             # rebase in progress; onto xxx
+  git rebase --continue
+  git log HEAD...origin/master --oneline # now you should only see your last local change
+  git commit -m "<resolved conflicts message>"
+git push --force-with-lease origin feature # you might need a "safe" forced push as this is a rebase
+```
+**Note**: it should be fine to `rebase`, because we are in our *temporary* feature branch.
+
 #### Squash n commits into one
 
 1. Do the following steps if you are **NOT** ***behind***
@@ -40,10 +64,10 @@ git push <remote> <branch>                        # e.g. git push origin master
 ```bash
 git status                   # find number <n> # or git log to see more details
 git reset --soft HEAD~<n>    # or git reset --soft <commit>
-git commit -m "<message"> 
+git commit -m "<message">
 ```
 
-2. If you are ***behind***:
+2. If you are ***behind*** (naive example, making changes from `master` branch, which you should not do!):
     * Squash all your local changes into 1 using `reset --soft HEAD~<n>`
     * Commit local micro changes as one big change
     * `pull` remote
@@ -53,20 +77,49 @@ git commit -m "<message">
 ```bash
 git status                   # find number <n>
 git reset --soft HEAD~<n>    # or git reset --soft <commit>
-git commit -m "<my local changes message"> 
+git commit -m "<my local changes message>"
 git pull
 git mergetool
-git commit -m "<resolved conflicts message"> 
+git commit -m "<resolved conflicts message>"
 git status                   # at this point, you should be ahead by 2 commits
 git push
 ```
-### Sync a fork
+#### How to not push whitespace changes to `master`
+The full example is on [Medium](https://medium.com/@ashtou/how-to-not-push-unnecessary-changes-to-your-git-repository-a9151d20ba8a?source=friends_link&sk=8c74225926ea846354aa985c6d2e3053). Suppose that `master` is unchanged, `feature` and working directory contain content changes including tons of whitespace changes. We need to push meaningful changes to `master`
+```bash
+# Reset changes in the working tree
+git checkout feature
+git reset --hard origin/master  # go back to what we had orginally
+git diff origin/master          # double-check that there is no difference with master
+git diff origin/feature         # see all the changes including the whitespace
+
+# Make a patch to remove whitespace
+git diff -U0 -w HEAD origin/feature > real_changes.diff               # -U0: 0 lines of context, -w:
+# Whitespace errors are fixed before patch is applied, --reject ensures atomicity
+git apply --reject --whitespace=fix --unidiff-zero real_changes.diff  # --unidiff-zero to match 'diff -U0'
+
+# Working directory contains the real changes now
+git diff origin/feature         # show all fake changes! (only whitespace changes)
+git diff origin/master          # show all real changes
+
+# Commit real changes
+git clean -f                    # clean .rej and .diff files
+git add .
+git commit -m "Update with content changes"
+
+# New trouble! 1 commit behind!
+git status -sb                # shows => ## feature...origin/feature [ahead 1, behind 1]
+# Use -f to resolve it (it's ok since this is a feature branch)
+git push -f origin feature
+```
+
+#### Sync a fork
 
 1. In the *clone*d project, add the original GitHub repository as a `remote`. `remote`s are like nicknames for the URLs of repositories, e.g. `origin` is one. Use **upstream**. Then `fetch` all branches of that remote into remote-tracking branches. Check that you are in the right place (e.g. your master of feature branch): `git branch` to see your ***** *current_branch*. and then `merge` our work with the remote's branch.
  ```bash
  git remote -v                   # current configured remote repository for your fork
  git remote add upstream <url>
- git fetch upstream				 # fetch lets you compare commits before a future pull 
+ git fetch upstream				 # fetch lets you compare commits before a future pull
  git branch -av					 # compare commits of different brnaches
  git checkout <branch>           # switch to your master or feature branch
  git merge upstream/master       # merge latest master branch from upstream with your local banch
@@ -136,7 +189,7 @@ git mergetool
 * `checkout` switch between branches in a repository you already have or restore working tree files. `checkout` can also be used to overwrite a file in your working copy with a version of that file from another revision [[Ref]( https://stackoverflow.com/questions/7298598/what-is-the-difference-between-git-clone-and-checkout#answer-7298621)].
 * `pull`  is a `fetch` plus `merge` the changes into the *local branch* of the same name [[Ref]( https://stackoverflow.com/questions/7298598/what-is-the-difference-between-git-clone-and-checkout#answer-7298621)].
 
-#### Diffs 
+#### Diffs
 
 1. Working directory vs. staged vs. HEAD
 
@@ -144,7 +197,7 @@ git mergetool
 * `git diff --staged` or `--cached` differences between the **index** and the **HEAD** (can also add option `--name-only`)
 * `git diff HEAD` differences between the **working directory** and **HEAD**. All changes since the last commit.
 [[Ref]( https://stackoverflow.com/questions/1587846/how-do-i-show-the-changes-which-have-been-staged?noredirect=1&lq=1)]
-![Diffs](images/diffs.png) 
+![Diffs](images/diffs.png)
 
 2. Fetched vs. staged
 
@@ -166,15 +219,15 @@ git diff --staged FETCH_HEAD
 
 ## Git Terminology
 
-#### Fork 
+#### Fork
 
-A *fork* is a copy of a repository. 
+A *fork* is a copy of a repository.
 
 * Forks are used to either propose changes to someone's project or to use someone's project as a starting point.
 
 #### Clone
 
-*Clone* is to create a local copy of a repo. 
+*Clone* is to create a local copy of a repo.
 
 * When you create a repository, it exists as a *remote* repository. You can clone your repo to create a *local* copy on your computer and sync between the two.
 
@@ -188,7 +241,7 @@ cat .git/HEAD
 
 #### .gitignore
 Git uses a `.gitignore` file to determine which files and directories to ignore, before you make a commit.
-* See official list of [recommended .gitignore files](https://github.com/github/gitignore) or use [gitignore.io](https://www.gitignore.io/) 
+* See official list of [recommended .gitignore files](https://github.com/github/gitignore) or use [gitignore.io](https://www.gitignore.io/)
 * if you already have a file checked in, git **will not** ignore it. you need to untrack the file first:
   ```bash
   $ git rm --staged <file>
@@ -204,15 +257,15 @@ Git uses a `.gitignore` file to determine which files and directories to ignore,
 
 #### git init
 
-1. Create empty Git repo in specified directory. 
+1. Create empty Git repo in specified directory.
     * Run with no arguments to initialise the current directory as a git repository
-```bash 
+```bash
 git init <directory>
 ```
 
 #### git clone
 
-1. Clone repo located at `<repo>` onto local machine. 
+1. Clone repo located at `<repo>` onto local machine.
 
     *  Original repo can be located on the local filesystem or on a remote machine via HTTP or SSH.
 ```bash
@@ -225,7 +278,7 @@ git clone <repo> <target>
 
 #### git config
 
-1. Define author name to be used for all commits in current repo. 
+1. Define author name to be used for all commits in current repo.
 
     * Devs commonly use `--global` flag to set config options for current user (configuration values on a global or local project level)
 
@@ -265,7 +318,7 @@ git commit -m "<message>"
 1. List which files are staged, unstaged, and untracked.
 
 ```bash
-git status
+git status # --sb
 ```
 
 #### git log
@@ -296,31 +349,31 @@ git show --stat
 
 1. Resolve conflicts using `vimdiff` [[Ref]( https://stackoverflow.com/questions/161813/how-to-resolve-merge-conflicts-in-git)]
     * if `mergetool` is not configured on the system:
-      
+
       ```bash
       git config merge.tool vimdiff
       ```
-    
+
     * Then run this:
-      
+
       ```bash
       git mergetool
       ```
-    
+
 2. It gives you 4 views:
     * *LOCAL* – this is file from the current branch
     * *BASE* – common ancestor, how file looked before both changes
     * *REMOTE* – file you are merging into your branch
-    * *MERGED* – merge result, this is what gets saved in the repo 
+    * *MERGED* – merge result, this is what gets saved in the repo
       ```
       ╔═══════╦══════╦════════╗
-      ║ LOCAL ║ BASE ║ REMOTE ║ 
+      ║ LOCAL ║ BASE ║ REMOTE ║
       ╠═══════╩══════╩════════╣
       ║        MERGED         ║
       ╚═══════════════════════╝
       ```
-    
-3. You could edit the **MERGED** view: 
+
+3. You could edit the **MERGED** view:
     * If you want to get changes from REMOTE
       ```base
       :diffg RE  
@@ -333,7 +386,7 @@ git show --stat
       ```base
       :diffg LO
       ```
-    
+
 4. `:wqa` save and exit
 
 5. `git clean` Remove extra `.orig` created by diff tool (`-n` to show, `-f` to execute)
@@ -352,7 +405,7 @@ git show --stat
 #### git revert
 1. Create new commit that undo all of the changes made in `<commit>`, then apply it to the current branch.
 
-```bash 
+```bash
 git revert <commit>
 ```
 
@@ -360,7 +413,7 @@ git revert <commit>
 
 1. Reset staging area to match most recent commit, but leave the working directory unchanged.
     * Or remove `<file>` from the staging area, but leave the working directory unchanged. This unstages a file **without** overwriting any changes.
-      ```bash 
+      ```bash
       git reset
       ```
       ```bash
@@ -376,11 +429,11 @@ git revert <commit>
 
 
 3. `--soft` does not touch the index file or the working tree at all, but resets the head to `<commit>`, just like all modes do.
-   
+
     * Combine several sequential commits into a new one (`HEAD~<n>` is the commit here)
       ```bash
       git reset --soft HEAD~<n>    # or git reset --soft <commit>
-      git commit -m "<message"> 
+      git commit -m "<message">
       ```
 #### git clean
 1. Show which files would be removed from working directory. Use the `-f` flag in place of the `-n` flag to execute the clean.
@@ -395,9 +448,9 @@ git clean -n
 
 1. Replace the last commit with the **staged** changes and last commit combined.
     * Amended commits are entirely new commits and the previous commit will no longer be on your current branch (history-rewriting [[Ref]( https://www.atlassian.com/git/tutorials/rewriting-history )])
-    
+
 2.  Or use with **nothing staged** to only edit the last commit’s message.
-    
+
 ```bash
 git commit --amend -m "<message>"
 ```
@@ -417,7 +470,7 @@ git rebase <base>
 
 #### git reflog
 
-1. Show a log of changes to the local repository’s `HEAD`. 
+1. Show a log of changes to the local repository’s `HEAD`.
     * Add `--relative-date` flag to show date info or `--all` to show all refs.
 ```bash
 git reflog
@@ -436,7 +489,7 @@ git branch -v              # all local branches
 git branch -v | grep \*    # only current branch
 ```
 
-2. To view your *local* and *remote* branches, pass the `-a` flag 
+2. To view your *local* and *remote* branches, pass the `-a` flag
 ```bash
 git branch -av
 ```
@@ -466,7 +519,7 @@ git branch -m <oldname> <newname>
 git checkout <branch>
 ```
 
-2. Create and checkout a new branch named `<branch>` 
+2. Create and checkout a new branch named `<branch>`
 ```bash
 git checkout -b <branch>
 ```
@@ -492,10 +545,10 @@ If the `merge` is successful, you cannot abort it (only `reset`)
 
 ### Remote Repositories
 
-#### git remote 
+#### git remote
 1. Create a new connection to a remote repo. Use `<name>` as a shortcut for `<url>`
     * After adding a remote, you can use `<name>` as a shortcut for `<url>` in other commands.
-```bash 
+```bash
 git remote add <name> <url>  # if used for initial push, 'origin' is used as <name>
 ```
 2. Show remote URLs after names with the verbose option
@@ -511,16 +564,16 @@ git remote rm <name>
 
 1. Fetch a specific `<branch>`, from the repo.
     * Download the remote content, but leave your local repo's work intact
-```bash 
+```bash
 git fetch <remote> <branch>
 ```
 
 2. Leave off `<branch>` to fetch all remote refs.
-```bash 
+```bash
 git fetch <remote>
 ```
 3. Fetch all remotes
-```bash 
+```bash
 git fetch --all
 ```
 
@@ -537,9 +590,9 @@ git pull <remote>
 git pull -s recursive -X ours # or theirs
 ```
 
-#### git push 
+#### git push
 
-1. Push the branch to `<remote>`, along with necessary commits and objects. 
+1. Push the branch to `<remote>`, along with necessary commits and objects.
     * Creates named branch in the remote repo if it doesn’t exist.
 ```bash
 git push <remote> <branch>
@@ -558,22 +611,22 @@ git push <remote> <branch>
     * Update the code of the subproject from the upstream repository: :warning: mind the `--squash`
      ```bash
      git fetch <mysubtree> master
-     git subtree pull --prefix=<folder_for_mysubtree> <mysubtree> master --squash 
+     git subtree pull --prefix=<folder_for_mysubtree> <mysubtree> master --squash
      ```
-    
+
 2. Push a subtree to `<branch>` (note that the remote here is  `origin` not the upstream. `<branch>` is the current branch we are pushing from.
 ```bash
-git subtree push --prefix=<folder_for_mysubtree> origin <branch> 
+git subtree push --prefix=<folder_for_mysubtree> origin <branch>
 ```
 
 3. **Contribute back upstream**: We can freely commit  fixes to the subproject in our local working directory, but to contribute back upstream, we need to **Fork** it and then add the fork URL as another remote. It might be a good idea to leave the `master` untouched and use another branch:
 ```bash
 git remote add <upstream_fork> <fork_repo_url>
-git subtree push --prefix=<folder_for_mysubtree> <upstream_fork> <fix_branch> 
+git subtree push --prefix=<folder_for_mysubtree> <upstream_fork> <fix_branch>
 ```
 
 
-4. Subtree `diff`: 
+4. Subtree `diff`:
 
 ```bash
 git fetch <mysubtree> master
