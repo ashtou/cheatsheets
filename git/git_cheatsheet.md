@@ -1,8 +1,8 @@
 ## 1. Git Terminology List ([terminology](#git-terminology))
+
 [Clone](#clone) | [Fork](#fork) | [.gitignore](#gitignore) | [ HEAD](#HEAD)
 
 ---
-
 
 
 ## 2. Git Command List ([commands](#git-commands))
@@ -11,16 +11,27 @@ git [add](#git-add) | git [branch](#git-branch) | git [checkout](#git-checkout) 
 
 ---
 
-
-
 ## 3. Git Examples
 
-#### Make a change to a remote repo
+#### Push from local `feature` to remote `feature`
+
+```bash
+  git stash save 'message'         # stash local changes
+  git pull origin master --rebase  # rebase feature to the origin master
+  # `pop` to remove from stash and reapply, `apply` to keep them in your stash and reapply
+  git stash pop/apply              # merge local changes into the latest code
+
+  git add <file/directory>         # stage
+  git commit -m 'message'
+  git push --force-with-lease      # push to feature and check for changes, in case you share the branch
+```
+
+#### Get familiar with the workflow (Not the best way to push)
 
 ```bash
 # 1. Get an idea of what has been changed at remote
 git fetch                                         # update remote-tracking branches
-git branch -a                                     
+git branch -a
 git diff <local_branch> <remote>/<remote_branch>  # e.g. git diff origin/master master
 git status                                        # see how many commits you are behind
 # 2. Make and commit your changes (also squash if you need to)
@@ -37,6 +48,7 @@ git push <remote> <branch>                        # e.g. git push origin master
 
 1. Suppose you are ***behind*** `master` (and your new changes are in `feature` branch):
 The best thing to do is to `rebase` your work into the up-to-date local `master`, such that your changes appear on top of the latest version of the master.
+
 ```bash
 # Suppose you have committed your feature branch changes, so now you switch to your local master
 git checkout master
